@@ -47,3 +47,11 @@ test.show()
 replace(oldpix, newpix, orig.size[0], orig.size[1])
 orig.show()
 new.show()
+def upsample(mini_img):
+    out = []
+    for row in mini_img:
+        doubled_row = sum([[i]*2 for i in row], [])
+        out.append(doubled_row)
+        out.append(doubled_row)
+
+    return out
