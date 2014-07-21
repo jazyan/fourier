@@ -18,35 +18,17 @@ def ycbcr (rgb):
     cr = 128 + 0.5*float(r) - 0.418688*float(g) - 0.081312*float(b)
     return (int(y), int(cb), int(cr))
 
-def replace (orig, new, l, w):
-    for i in range(l):
-        for j in range(w):
-            new[i,j] = ycbcr(orig[i,j])
+def replace (old, new):
+    for i in xrange(len(old)):
+        for j in xrange(len(old[i])):
+            new[i,j] = ycbcr(old[i,j])
 
-def downsample (old, new, l, w):
-    for i in range(l):
-        for j in range(w):
+def downsample (old, new):
+    for i in xrange(len(old)):
+        for j in xrange(len(old[i])):
             if i%2 == 0 and j%2 == 0:
                 new[i/2, j/2] = ycbcr(old[i,j])
 
-downsample(oldpix, newpix2, orig.size[0], orig.size[1])
-new2.show()
-'''
-newim = orig.convert('YCbCr')
-newim.show()
-print newim.getpixel((0,0))
-orig.show()
-print orig.getpixel((0,0))
-test = Image.open("mona.png")
-test = numpy.array(test)
-test[:,:,0] *= 0
-test[:,:,1] *= 0
-test = Image.fromarray(test)
-test.show()
-'''
-replace(oldpix, newpix, orig.size[0], orig.size[1])
-orig.show()
-new.show()
 def upsample(mini_img):
     out = []
     for row in mini_img:
@@ -55,3 +37,10 @@ def upsample(mini_img):
         out.append(doubled_row)
 
     return out
+
+downsample(oldpix, newpix2, orig.size[0], orig.size[1])
+new2.show()
+
+replace(oldpix, newpix, orig.size[0], orig.size[1])
+orig.show()
+new.show()
