@@ -2,6 +2,13 @@ from PIL import Image
 import math
 import numpy as np
 import scipy as sc
+import sys
+import time
+import datetime
+
+fin = open(sys.argv[1], 'r')
+SCRIPT = int(fin.read())
+fout = open(sys.argv[2], 'w')
 
 # there are 30 * 35 stick men
 
@@ -36,16 +43,6 @@ def split (img, x, y):
                 newRow = []
                 k += 1
     return ans
-
-def cornertest ():
-    upleft = Image.fromarray(sticks[0])
-    upleft.show()
-    upright = Image.fromarray(sticks[34])
-    upright.show()
-    lowleft = Image.fromarray(sticks[1014])
-    lowleft.show()
-    lowright = Image.fromarray(sticks[1049])
-    lowright.show()
 
 def stagger (s, off, w, hshift):
     test = np.zeros((hshift, off, w))
@@ -83,17 +80,16 @@ def segments (row, n, h):
     return ans
 
 # change to 20 if div by 10
-orig = rem_borders(orig, 15, 15, 10, 25)
+orig = rem_borders(orig, 15, 15, 10, 20)
 sticks = np.vsplit(orig, 30)
-print sticks[0].shape
+#print sticks[0].shape
 
 extract = [0 for i in range(30)]
 for i in range(30):
-    print i
-    extract[i] = segments (sticks[i], 91, 40)
+    extract[i] = segments (sticks[i], 137, SCRIPT)
 # NOTE 42 has no same elements
-
 print len(sticks[0][0])
+
 def comp_rows (row1, row2):
     ans = []
     #print "GOAL", len(row1)
@@ -102,19 +98,14 @@ def comp_rows (row1, row2):
             if int(np.count_nonzero(row1[r1])) == int(np.count_nonzero(row2[r2])):
                 #print r1, r2
                 if np.array_equal(row1[r1], row2[r2]):
-                    print "WAT"
-                    ans.append(row1[r1], row2[r2])
+                    #print "WAT"
+                    ans.append(row1[r1])
+                    ans.append(row2[r2])
     return ans
 
 for i in range(30):
     for j in range(i+1, 30):
-        print "comparing rows", i, j
+        print SCRIPT, ": comparing rows", i, j
         x = comp_rows (extract[i], extract[j])
-        if x != []:
-            print "WOW"
-print "DONE", len(x)
-x2 = Image.fromarray(extract[0][6])
-#x2.show()
-x3 = Image.fromarray(extract[1][0])
-#x3.show()
-#print np.array_equal(x2, x3)
+        fout.write(str(x) + "\n")
+    print "DONE", SCRIPT, datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
