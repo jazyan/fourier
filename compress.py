@@ -1,24 +1,32 @@
 from PIL import Image
 import math
-import numpy
+import numpy as np
 
 orig = Image.open("am_goth.png")
 new = Image.new( 'YCbCr', (orig.size[0], orig.size[1]), "black")
 new2 = Image.new('YCbCr', (orig.size[0]/2, orig.size[1]/2), "black")
 
-oldpix = orig.load()
-print orig.size[0], orig.size[1]
-newpix = new.load()
-newpix2 = new2.load()
+orig = np.array(orig)
+print orig.shape
+print type(orig)
+new = np.array(new)
+new2 = np.array(new2)
 
-def ycbcr (rgb):
-    (r, g, b) = rgb
-    y = 0.299*float(r) + 0.587*float(g) + 0.114*float(b)
-    cb = 128 - 0.168736*float(r) - 0.331264*float(g) + 0.5*float(b)
-    cr = 128 + 0.5*float(r) - 0.418688*float(g) - 0.081312*float(b)
-    return (int(y), int(cb), int(cr))
+def ycbcr (pixels):
+    r = pixels[:,:,0]
+    g = pixels[:,:,1]
+    b = pixels[:,:,2]
+    y = 0.299*r + 0.587*g + 0.114*b
+    cb = 128 - 0.168736*r - 0.331264*g + 0.5*b
+    cr = 128 + 0.5*r - 0.418688*g - 0.081312*b
+    return np.dstack((y, cb, cr))
 
-def replace (old, new):
+test = ycbcr(orig).astype(int)
+print test.shape
+test = Image.fromarray(test)
+test.show()
+
+def replace (old):
     for i in xrange(len(old)):
         for j in xrange(len(old[i])):
             new[i,j] = ycbcr(old[i,j])
