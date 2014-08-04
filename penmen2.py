@@ -3,18 +3,16 @@ import math
 import numpy as np
 import scipy as sc
 import sys
-import time
-import datetime
 
-fin = open(sys.argv[1], 'r')
-SCRIPT = int(fin.read())
-fout = open(sys.argv[2], 'w')
-
-# there are 30 * 35 stick men
+#fin = open(sys.argv[1], 'r')
+#SCRIPT = int(fin.read())
+#fout = open(sys.argv[2], 'w')
+SCRIPT = 40
 
 orig = Image.open("penmen2.png")
 orig = np.array(orig)
 
+# removes whitespace from the sides of the image
 def rem_borders (img, u, d, l, r):
     for i in range(u):
         img = sc.delete(img, 0, 0)
@@ -44,15 +42,17 @@ def split (img, x, y):
                 k += 1
     return ans
 
-def stagger (s, off, w, hshift):
-    test = np.zeros((hshift, off, w))
+# generates h - off vertical shifts. h = w + off
+def stagger (s, off, w):
+    test = np.zeros((57 - off, off, w))
     for i in range(len(s)):
         if i + off <= len(s):
             test[i] = s[i:i+off]
     return test
 
-def off (s, num, n, off, w, hshift):
-    test = np.zeros((hshift, off, w))
+# generates h - off horizontal shifts
+def off (s, num, n, off, w):
+    test = np.zeros((57 - off, off, w))
     for i in range(len(s)):
         if i + off <= len(s):
             test[i] = s[i:i+off]
@@ -62,50 +62,84 @@ def off (s, num, n, off, w, hshift):
             test[i, :, 0:(w-num-1)] = hold2
     return test
 
-def segments (row, n, h):
-    # split into n segments with height h
+# create n segments of height h
+def segments (row, n, h, rownum):
     seg = np.hsplit(row, n)
     w = len(seg[0][0])
-    off0 = []
+    off0 = [0 for i in range(n)]
     off1 = []
     for i in range(n):
-        off0.append(stagger(seg[i], h, w, 57-h))
+        off0[i] = stagger(seg[i], h, w)
     for i in range(1, n):
         for j in range(1, w):
-            off1.append(off(seg[i-1], j, seg[i], h, w, 57-h))
+            off1.append(off(seg[i-1], j, seg[i], h, w))
     pieces = off0 + off1
     ans = [piece[i] for piece in pieces for i in range(57-h)]
-    # filter by little whitespace
-    ans = [i for i in ans if float(np.count_nonzero(i))/600. < 0.6]
+    # filter by % whitespace
+    ans = [arr2int(i) for i in ans if float(np.count_nonzero(i))/float(h*w) < 0.8]
+    #ans = [(rownum, arr2int(i)) for i in ans if float(np.count_nonzero(i))/float(h*w) < 0.9]
+    return ans
+
+def arr2int (arr):
+    ans = 2
+    for row in arr:
+        for i in row:
+            if i == 255.:
+                ans = ans * 10 + 1
+            else:
+                ans *= 10
+    return ans
+    #ans = np.array_str(arr)
+    #ans = ans.replace("[", "").replace("]", "").replace("\n", "")
+    #ans = ans.replace("255", "1").replace(" ", "").replace(".", "2")
+    # add 2 in beginning so converting to int doesn't lose first 0
+    #ans = '2' + ans
+    #return int(ans)
+
+def int2arr (i, w, h):
+    ans = str(i)
+    # remove first 2
+    ans = ans[1:]
+    ans = ans.replace("2", " ").replace("1", "255.").replace("0", "0.")
+    ans = np.fromstring(ans, dtype=float, sep=' ')
+    ans = np.reshape(ans, (w, h))
+    return ans
+
+def comp_rows (row1, row2):
+    ans = []
+    for r1 in row1:
+        for r2 in row2:
+            if int(np.count_nonzero(r1)) == int(np.count_nonzero(r2)):
+                #print r1, r2
+                if np.array_equal(r1, r2):
+                    ans.append(r1)
+                    ans.append(r2)
     return ans
 
 # change to 20 if div by 10
 orig = rem_borders(orig, 15, 15, 10, 20)
 sticks = np.vsplit(orig, 30)
-#print sticks[0].shape
 
 extract = [0 for i in range(30)]
+allex = []
 for i in range(30):
-    extract[i] = segments (sticks[i], 137, SCRIPT)
-# NOTE 42 has no same elements
-print len(sticks[0][0])
+    print i
+    extract[i] = segments (sticks[i], 137, 40, i)
+    allex = allex + extract[i]
 
-def comp_rows (row1, row2):
-    ans = []
-    #print "GOAL", len(row1)
-    for r1 in range(len(row1)):
-        for r2 in range(len(row2)):
-            if int(np.count_nonzero(row1[r1])) == int(np.count_nonzero(row2[r2])):
-                #print r1, r2
-                if np.array_equal(row1[r1], row2[r2]):
-                    #print "WAT"
-                    ans.append(row1[r1])
-                    ans.append(row2[r2])
-    return ans
 
-for i in range(30):
-    for j in range(i+1, 30):
-        print SCRIPT, ": comparing rows", i, j
-        x = comp_rows (extract[i], extract[j])
-        fout.write(str(x) + "\n")
-    print "DONE", SCRIPT, datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+allex = sorted(allex, key =lambda x:x[1])
+print "ALLEX LEN", len(allex)
+answers = []
+for i in range(1, len(allex)):
+    if allex[i][1] == allex[i-1][1] and allex[i][0] != allex[i-1][0]:
+        answers.append(allex[i-1])
+        answers.append(allex[i])
+
+print "ANSWERS", len(answers)
+'''
+for i in answers:
+    print i[0]
+    j = Image.fromarray(int2arr(i[1], 40, 10))
+    j.show()
+'''
