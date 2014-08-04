@@ -4,14 +4,11 @@ import numpy as np
 import scipy as sc
 import sys
 
+#TODO: fix int2arr, play around with good size
+
 #fin = open(sys.argv[1], 'r')
 #SCRIPT = int(fin.read())
 #fout = open(sys.argv[2], 'w')
-SCRIPT = 40
-
-orig = Image.open("penmen2.png")
-orig = np.array(orig)
-
 # removes whitespace from the sides of the image
 def rem_borders (img, u, d, l, r):
     for i in range(u):
@@ -76,8 +73,7 @@ def segments (row, n, h, rownum):
     pieces = off0 + off1
     ans = [piece[i] for piece in pieces for i in range(57-h)]
     # filter by % whitespace
-    ans = [arr2int(i) for i in ans if float(np.count_nonzero(i))/float(h*w) < 0.8]
-    #ans = [(rownum, arr2int(i)) for i in ans if float(np.count_nonzero(i))/float(h*w) < 0.9]
+    ans = [(rownum, arr2int(i)) for i in ans if float(np.count_nonzero(i))/float(h*w) < 0.9]
     return ans
 
 def arr2int (arr):
@@ -89,21 +85,20 @@ def arr2int (arr):
             else:
                 ans *= 10
     return ans
-    #ans = np.array_str(arr)
-    #ans = ans.replace("[", "").replace("]", "").replace("\n", "")
-    #ans = ans.replace("255", "1").replace(" ", "").replace(".", "2")
-    # add 2 in beginning so converting to int doesn't lose first 0
-    #ans = '2' + ans
-    #return int(ans)
 
 def int2arr (i, w, h):
     ans = str(i)
     # remove first 2
     ans = ans[1:]
-    ans = ans.replace("2", " ").replace("1", "255.").replace("0", "0.")
-    ans = np.fromstring(ans, dtype=float, sep=' ')
-    ans = np.reshape(ans, (w, h))
-    return ans
+    acc = []
+    for i in ans:
+        if i == "1":
+            acc.append(255.)
+        else:
+            acc.append(0.)
+    answer = np.array(acc)
+    answer = np.reshape(answer, (w, h))
+    return answer
 
 def comp_rows (row1, row2):
     ans = []
@@ -116,30 +111,46 @@ def comp_rows (row1, row2):
                     ans.append(r2)
     return ans
 
-# change to 20 if div by 10
-orig = rem_borders(orig, 15, 15, 10, 20)
-sticks = np.vsplit(orig, 30)
+def run (w, h):
+    orig = Image.open("penmen2.png")
+    orig = np.array(orig)
+    if w == 10:
+        orig = rem_borders(orig, 15, 15, 10, 20)
+    else:
+        orig = rem_borders(orig, 15, 15, 10, 25)
+    sticks = np.vsplit(orig, 30)
+    extract = [0 for i in range(30)]
+    allex = []
+    for i in range(30):
+        print i
+        if w == 10:
+            extract[i] = segments (sticks[i], 137, h, i)
+        else:
+            extract[i] = segments (sticks[i], 1365/w, h, i)
+        allex = allex + extract[i]
+    allex = sorted(allex, key =lambda x:x[1])
+    print "ALLEX LEN", len(allex)
+    answers = []
+    for i in range(1, len(allex)):
+        if allex[i][1] == allex[i-1][1] and allex[i][0] != allex[i-1][0]:
+            print "ROW", allex[i][0], allex[i-1][0]
+            answers.append(allex[i-1])
+            answers.append(allex[i])
+    return answers
 
-extract = [0 for i in range(30)]
-allex = []
-for i in range(30):
-    print i
-    extract[i] = segments (sticks[i], 137, 40, i)
-    allex = allex + extract[i]
+def param (w, h):
+    ans = run (w, h)
+    print len(ans)
+    if len(ans) < 20:
+        for i in ans:
+            j = Image.fromarray(int2arr(i[1], h, w))
+            j.show()
+    else:
+        for i in range(len(ans)):
+            if ans[i][0] == 19:
+                test = Image.fromarray(int2arr(ans[i][1], h, w))
+                test2 = Image.fromarray(int2arr(ans[i+1][1], h, w))
+                test.show()
+                test2.show()
 
-
-allex = sorted(allex, key =lambda x:x[1])
-print "ALLEX LEN", len(allex)
-answers = []
-for i in range(1, len(allex)):
-    if allex[i][1] == allex[i-1][1] and allex[i][0] != allex[i-1][0]:
-        answers.append(allex[i-1])
-        answers.append(allex[i])
-
-print "ANSWERS", len(answers)
-'''
-for i in answers:
-    print i[0]
-    j = Image.fromarray(int2arr(i[1], 40, 10))
-    j.show()
-'''
+param (5, 41)
