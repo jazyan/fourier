@@ -2,13 +2,7 @@ from PIL import Image
 import math
 import numpy as np
 import scipy as sc
-import sys
 
-#TODO: fix int2arr, play around with good size
-
-#fin = open(sys.argv[1], 'r')
-#SCRIPT = int(fin.read())
-#fout = open(sys.argv[2], 'w')
 # removes whitespace from the sides of the image
 def rem_borders (img, u, d, l, r):
     for i in range(u):
@@ -24,20 +18,6 @@ def rem_borders (img, u, d, l, r):
         img = sc.delete(img, 0, 1)
     img = np.fliplr(img)
     return img
-
-def split (img, x, y):
-    (w, l) = img.shape
-    ans = np.zeros((w*l/(x*y), x, y))
-    newRow = []
-    for i in xrange(0, len(img)):
-        k = i/x * (l/y)
-        for j in xrange(0, len(img[i])):
-            newRow.append(orig[i][j])
-            if (j+1) % y == 0:
-                ans[k][i%x] = newRow
-                newRow = []
-                k += 1
-    return ans
 
 # generates h - off vertical shifts. h = w + off
 def stagger (s, off, w):
@@ -71,19 +51,36 @@ def segments (row, n, h, rownum):
         for j in range(1, w):
             off1.append(off(seg[i-1], j, seg[i], h, w))
     pieces = off0 + off1
-    ans = [piece[i] for piece in pieces for i in range(57-h)]
+    ans = [(i, piece[i]) for piece in pieces for i in range(57-h)]
     # filter by % whitespace
-    ans = [(rownum, arr2int(i)) for i in ans if float(np.count_nonzero(i))/float(h*w) < 0.9]
+    ans = [(rownum, height, arr2int(i)) for (height, i) in ans if float(np.count_nonzero(i))/float(h*w) < 0.75]
     return ans
 
 def arr2int (arr):
     ans = 2
-    for row in arr:
-        for i in row:
-            if i == 255.:
+    # left, right, up, down
+    bbor = [1, 1, 1, 1]
+    for j in range(len(arr)):
+        for i in range(len(arr[j])):
+            if arr[j][i] == 255.:
                 ans = ans * 10 + 1
             else:
                 ans *= 10
+                '''
+                if j == 0:
+                    if bbor[2] == 0:
+                        bbor[2] = 1
+                if j == (len(arr) - 1):
+                    if bbor[3] == 0:
+                        bbor[3] == 1
+                if i == 0:
+                    if bbor[0] == 0:
+                        bbor[0] = 1
+                if i == (len(arr[j]) - 1):
+                    if bbor[1] == 0:
+                        bbor[1] = 1
+                '''
+    bb = (bbor[0] or bbor[1]) or (bbor[2] or bbor[3])
     return ans
 
 def int2arr (i, w, h):
@@ -100,22 +97,13 @@ def int2arr (i, w, h):
     answer = np.reshape(answer, (w, h))
     return answer
 
-def comp_rows (row1, row2):
-    ans = []
-    for r1 in row1:
-        for r2 in row2:
-            if int(np.count_nonzero(r1)) == int(np.count_nonzero(r2)):
-                #print r1, r2
-                if np.array_equal(r1, r2):
-                    ans.append(r1)
-                    ans.append(r2)
-    return ans
-
 def run (w, h):
     orig = Image.open("penmen2.png")
     orig = np.array(orig)
     if w == 10:
         orig = rem_borders(orig, 15, 15, 10, 20)
+    elif w == 4:
+        orig = rem_borders(orig, 15, 15, 10, 26)
     else:
         orig = rem_borders(orig, 15, 15, 10, 25)
     sticks = np.vsplit(orig, 30)
@@ -125,14 +113,30 @@ def run (w, h):
         print i
         if w == 10:
             extract[i] = segments (sticks[i], 137, h, i)
+        elif w == 4:
+            extract[i] = segments (sticks[i], 1364/w, h, i)
         else:
             extract[i] = segments (sticks[i], 1365/w, h, i)
+        print "How many passed?", len(extract[i])
         allex = allex + extract[i]
-    allex = sorted(allex, key =lambda x:x[1])
+        #for i in range(20, 40):
+            #(a, b, ans) = allex[i]
+            #check = Image.fromarray(int2arr(ans, h, w))
+            #check.show()
+    allex = sorted(allex, key =lambda x:x[2])
     print "ALLEX LEN", len(allex)
+    #(a, b, test) = allex[0]
+    #(a1, b1, test2) = allex[1]
+    #view = Image.fromarray(int2arr(test, 40, 15))
+    #view2 = Image.fromarray(int2arr(test, 40, 15))
+    #view.show()
+    #view2.show()
     answers = []
+    #checked = [(15, 0), (22, 7), (18, 15), (10, 3), (20, 13), (20, 2),
+    #           (10, 1), (20, 23), (18, 8), (28, 4), (19, 18), (28, 18),
+    #           (27, 13), (19, 13)]
     for i in range(1, len(allex)):
-        if allex[i][1] == allex[i-1][1] and allex[i][0] != allex[i-1][0]:
+        if allex[i][2] == allex[i-1][2] and allex[i][0] != allex[i-1][0]: #and not((allex[i][0], allex[i-1][0]) in checked) and abs(allex[i][1] - allex[i-1][1]) <= 10:
             print "ROW", allex[i][0], allex[i-1][0]
             answers.append(allex[i-1])
             answers.append(allex[i])
@@ -141,16 +145,17 @@ def run (w, h):
 def param (w, h):
     ans = run (w, h)
     print len(ans)
-    if len(ans) < 20:
-        for i in ans:
-            j = Image.fromarray(int2arr(i[1], h, w))
-            j.show()
+    if len(ans) <= 200:
+        for i in range(len(ans)):
+            if i%2 == 0:
+                j = Image.fromarray(int2arr(ans[i][2], h, w))
+                j.show()
     else:
         for i in range(len(ans)):
-            if ans[i][0] == 19:
-                test = Image.fromarray(int2arr(ans[i][1], h, w))
-                test2 = Image.fromarray(int2arr(ans[i+1][1], h, w))
+            if ans[i][0] == 19 and ans[i-1][0] == 16:
+                test = Image.fromarray(int2arr(ans[i][2], h, w))
+                test2 = Image.fromarray(int2arr(ans[i-1][2], h, w))
                 test.show()
                 test2.show()
 
-param (5, 41)
+param (15, 40)
