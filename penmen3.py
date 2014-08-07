@@ -101,26 +101,24 @@ def run (w, h):
         extract[i] = stagger (sticks[i], h, w, i)
         print "How many passed?", len(extract[i])
         allex = allex + extract[i]
-    allex = sorted(allex, key =lambda x:x[0])
-    print "ALLEX", allex[len(allex) - 700][0], allex[len(allex)-1][0]
-    print "ALLEX LEN", len(allex)
-    print "AVERAGE", len(allex)/30.
+    allex = sorted(allex, key = lambda x:x[0])
+    allex_len = len(allex)
+    print "ALLEX", allex[allex_len - 700][0], allex[allex_len-1][0]
+    print "ALLEX LEN", allex_len
+    print "AVERAGE", allex_len/30.
     answers = []
-    for i in range(len(allex)):
+    for (i, ai) in enumerate(allex):
         print i
-        if i + 1000 < len(allex):
-            for j in range(i, i + 1000):
-                if dist2(allex[i][2], allex[j][2]) < 120 and abs(allex[i][1] - allex[j][1]) > 3:
-                    print "ROW", allex[i][1], allex[j][1]
-                    print "AT SORT", allex[i][0], allex[j][0]
-                    answers.append(allex[i])
-                    answers.append(allex[j])
-        else:
-            for j in range(i, len(allex)):
-                if dist2(allex[i][2], allex[j][2]) < 120 and abs(allex[i][1] - allex[j][1]) > 3:
-                    print "ROW", allex[i][1], allex[j][1]
-                    answers.append(allex[i])
-                    answers.append(allex[j])
+        ai0, ai1, ai2 = ai
+        for j in range(i, min(i + 1000, allex_len)):
+            aj0, aj1, aj2 = aj = allex[j]
+
+            if dist2(ai2, aj2) < 120 and abs(ai1 - aj1) > 3:
+                print "ROW", ai1, aj1
+                print "AT SORT", ai0, aj0
+                answers.append(ai)
+                answers.append(aj)
+
     return answers
 
 def param (w, h):
