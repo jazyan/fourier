@@ -31,8 +31,7 @@ def splitws (img):
                 ctr = i
     return rows
 
-'''
-def arr2int (arr):
+def arr2str (arr):
     ans = 2
     # left, right, up, down
     for j in range(len(arr)):
@@ -43,7 +42,7 @@ def arr2int (arr):
                 ans *= 10
     return str(ans)
 
-def int2arr (i, w, h):
+def str2arr (i, w, h):
     ans = str(i)
     # remove first 2
     ans = ans[1:]
@@ -56,7 +55,6 @@ def int2arr (i, w, h):
     answer = np.array(acc)
     answer = np.reshape(answer, (w, h))
     return answer
-'''
 
 # generates h - off vertical shifts. h = w + off
 def stagger (s, h, w, rownum):
@@ -66,8 +64,7 @@ def stagger (s, h, w, rownum):
         for j in range(height - h):
             x = s[j:(h + j), i:(i+w)]
             if float(np.count_nonzero(x))/float(h*w) < 0.67:
-                #ans.append((np.count_nonzero(x), rownum, arr2int(x)))
-                ans.append((np.count_nonzero(x), rownum, x))
+                ans.append((np.count_nonzero(x), rownum, arr2str(x)))
     return ans
 
 # basically XOR bits
@@ -113,7 +110,7 @@ def run (w, h):
         for j in range(i, min(i + 1000, allex_len)):
             aj0, aj1, aj2 = aj = allex[j]
 
-            if dist2(ai2, aj2) < 120 and abs(ai1 - aj1) > 3:
+            if dist(ai2, aj2) < 120 and abs(ai1 - aj1) > 3:
                 print "ROW", ai1, aj1
                 print "AT SORT", ai0, aj0
                 answers.append(ai)
@@ -130,12 +127,10 @@ def param (w, h):
         rows = []
         for i in range(len(ans)):
             if i % 2 == 0 and not((ans[i][1], ans[i+1][1]) in rows or (ans[i+1][1], ans[i][1]) in rows):
-                img1 = ans[i][2]
-                #img1 = int2arr(ans[i][2], h, w)
+                img1 = str2arr(ans[i][2], h, w)
                 ws = np.ones((h, 1))*255
                 print "ROWS", ans[i][1], ans[i+1][1]
-                img2 = ans[i+1][2]
-                #img2 = int2arr(ans[i+1][2], h, w)
+                img2 = str2arr(ans[i+1][2], h, w)
                 rows.append((ans[i][1], ans[i+1][1]))
                 view = np.concatenate((img1, ws, ws, ws, img2), axis = 1)
                 view = Image.fromarray(view)
@@ -143,7 +138,7 @@ def param (w, h):
     else:
         for i in range(200):
             if i%2 == 0:
-                test = Image.fromarray(int2arr(ans[i][2], h, w))
+                test = Image.fromarray(str2arr(ans[i][2], h, w))
                 test.show()
     timer2 = time.asctime(time.localtime(time.time()))
     finish = float(timer2[14:16]) + float(timer[17:19])/60.
