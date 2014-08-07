@@ -117,7 +117,7 @@ def run (w, h):
                     answers.append(allex[j])
         else:
             for j in range(i, len(allex)):
-                if dist(allex[i][2], allex[j][2]) < 120 and abs(allex[i][1] - allex[j][1]) > 3:
+                if dist2(allex[i][2], allex[j][2]) < 120 and abs(allex[i][1] - allex[j][1]) > 3:
                     print "ROW", allex[i][1], allex[j][1]
                     answers.append(allex[i])
                     answers.append(allex[j])
