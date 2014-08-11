@@ -4,6 +4,7 @@ import numpy as np
 import scipy as sc
 import scipy.spatial
 import time
+from bitstring import BitArray
 
 # removes whitespace from the sides of the image
 def rem_borders (img, u, d, l, r):
@@ -46,6 +47,16 @@ def arr2str (arr):
                 ans *= 10
     return str(ans)
 
+def arr2bit (arr):
+    ans = "0b"
+    for j in range(len(arr)):
+        for i in range(len(arr[j])):
+            if arr[j][i] == 255.:
+                ans += '1'
+            else:
+                ans += '0'
+    return BitArray(ans)
+
 # converts the string back to array
 def str2arr (i, w, h):
     ans = str(i)
@@ -70,8 +81,9 @@ def stagger (s, h, w, rownum):
         for j in range(height - h):
             x = s[j:(h + j), i:(i+w)]
             if float(np.count_nonzero(x))/float(h*w) < 0.67:
-                ans.append((np.count_nonzero(x), rownum, x))
+                #ans.append((np.count_nonzero(x), rownum, x))
                 #ans.append((np.count_nonzero(x), rownum, arr2str(x)))
+                ans.append((np.count_nonzero(x), rownum, arr2bit(x)))
     return ans
 
 # distance function for XOR-ing the string "bits"
@@ -92,6 +104,11 @@ def dist2 (v1, v2):
             tally += 1
     return tally
 
+# real XOR-ing
+def dist3 (v1, v2):
+    return (v1^v2).count("1")
+    #return sum(map(int, list(ans)))
+
 # meat of the program. puts together above functions
 def run (w, h):
     orig = Image.open("penmen2.png")
@@ -106,10 +123,6 @@ def run (w, h):
     ## sticks contains the 30 rows
     sticks = splitws(orig)
 
-    ## NOTE: converting to type bool makes it run slower?
-    for i in range(30):
-        sticks[i] = sticks[i].astype(int)
-
     ## allsamples stores w by h samples
     extract = [0 for i in range(30)]
     allsamples = []
@@ -119,7 +132,7 @@ def run (w, h):
 
     ## sort by % whitespace
     allsamples = sorted(allsamples, key = lambda x:x[0])
-
+    allsamples_len = len(allsamples)
     ## shorter pairwise comparison through sorted allsamples
     ## accept samples that have <120 px diff and are >3 rows apart
     answers = []
@@ -128,7 +141,7 @@ def run (w, h):
         ai0, ai1, ai2 = ai
         for j in range(i, min(i + 1000, allsamples_len)):
             aj0, aj1, aj2 = aj = allsamples[j]
-            if dist2(ai2, aj2) < 120 and abs(ai1 - aj1) > 3:
+            if dist3(ai2, aj2) < 120 and abs(ai1 - aj1) > 3:
                 print "ROW", ai1, aj1
                 print "AT SORT", ai0, aj0
                 answers.append(ai)
