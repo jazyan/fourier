@@ -4,7 +4,7 @@ import numpy as np
 import scipy as sc
 import scipy.spatial
 import time
-from bitstring import BitArray
+from bitstring import Bits
 
 # removes whitespace from the sides of the image
 def rem_borders (img, u, d, l, r):
@@ -48,20 +48,21 @@ def arr2str (arr):
     return str(ans)
 
 def arr2bit (arr):
-    ans = "0b"
+    ans = "0x"
     for j in range(len(arr)):
         for i in range(len(arr[j])):
             if arr[j][i] == 255.:
                 ans += '1'
             else:
                 ans += '0'
-    return BitArray(ans)
+    return Bits(ans)
 
 # converts the string back to array
 def str2arr (i, w, h):
     ans = str(i)
-    # remove first "2" in str
-    ans = ans[1:]
+    # remove first "0x" in str
+    ans = ans[2:]
+    print ans, len(ans)
     acc = []
     for i in ans:
         if i == "1":
@@ -82,8 +83,8 @@ def stagger (s, h, w, rownum):
             x = s[j:(h + j), i:(i+w)]
             if float(np.count_nonzero(x))/float(h*w) < 0.67:
                 #ans.append((np.count_nonzero(x), rownum, x))
-                #ans.append((np.count_nonzero(x), rownum, arr2str(x)))
-                ans.append((np.count_nonzero(x), rownum, arr2bit(x)))
+                ans.append((np.count_nonzero(x), rownum, arr2str(x)))
+                #ans.append((np.count_nonzero(x), rownum, arr2bit(x)))
     return ans
 
 # distance function for XOR-ing the string "bits"
@@ -106,7 +107,7 @@ def dist2 (v1, v2):
 
 # real XOR-ing
 def dist3 (v1, v2):
-    return (v1^v2).count("1")
+    return (v1^v2).bin.count("1")
     #return sum(map(int, list(ans)))
 
 # meat of the program. puts together above functions
@@ -133,6 +134,7 @@ def run (w, h):
     ## sort by % whitespace
     allsamples = sorted(allsamples, key = lambda x:x[0])
     allsamples_len = len(allsamples)
+    print allsamples_len
     ## shorter pairwise comparison through sorted allsamples
     ## accept samples that have <120 px diff and are >3 rows apart
     answers = []
@@ -141,9 +143,10 @@ def run (w, h):
         ai0, ai1, ai2 = ai
         for j in range(i, min(i + 1000, allsamples_len)):
             aj0, aj1, aj2 = aj = allsamples[j]
-            if dist3(ai2, aj2) < 120 and abs(ai1 - aj1) > 3:
+            if dist(ai2, aj2) < 120 and abs(ai1 - aj1) > 3:
                 print "ROW", ai1, aj1
                 print "AT SORT", ai0, aj0
+                print ai2
                 answers.append(ai)
                 answers.append(aj)
     return answers
@@ -151,13 +154,12 @@ def run (w, h):
 # below is for displaying the results
 def display (w, h):
     ## for timing purposes
-    timer = time.asctime(time.localtime(time.time()))
-    start = int(timer[11:13])*3600 + int(timer[14:16])*60 + int(timer[17:19])
-
+    start = time.time()
     ## find all the pairs for consideration
     ans = run (w, h)
     print len(ans)
-
+    finish = time.time()
+    print "TIME TAKEN IN SEC:", finish - start
     ## only show all if fewer than 100 matches, prevents overflow
     if len(ans) <= 200:
         rows = []
@@ -183,8 +185,5 @@ def display (w, h):
             if i%2 == 0:
                 test = Image.fromarray(str2arr(ans[i][2], h, w))
                 test.show()
-    timer2 = time.asctime(time.localtime(time.time()))
-    finish = int(timer[11:13])*3600 + int(timer2[14:16])*60 + int(timer[17:19])
-    print "TIME TAKEN IN SEC:", finish - start
 
 display (15, 52)
