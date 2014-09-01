@@ -1,3 +1,5 @@
+# A solution for finding the two identical penmen in penmen2.png
+
 from PIL import Image
 import math
 import numpy as np
@@ -186,4 +188,5 @@ def display (w, h):
                 test = Image.fromarray(str2arr(ans[i][2], h, w))
                 test.show()
 
-display (15, 52)
+if __name__ == "__main__":
+    display (15, 52)
